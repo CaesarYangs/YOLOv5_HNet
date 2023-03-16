@@ -9,7 +9,8 @@ static/js/lib/
 .vscode/
 .idea/
 config/config.json
-data/
 node*/
 package-lock.json
 package.json
+*.pt
+*.onnx
