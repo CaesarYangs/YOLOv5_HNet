@@ -509,11 +509,11 @@ def train(hyp, opt, device, tb_writer=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str,
-                        default='weights/yolov5s.pt', help='initial weights path')
+                        default='', help='initial weights path')
     parser.add_argument(
-        '--cfg', type=str, default='models/baseline_s.yaml', help='model.yaml path')
+        '--cfg', type=str, default='models/modify_ShuffleNetV2.yaml', help='model.yaml path')
     parser.add_argument('--data', type=str,
-                        default='data/helmet1_local.yaml', help='data.yaml path')
+                        default='data/helmet1.yaml', help='data.yaml path')
     parser.add_argument(
         '--hyp', type=str, default='data/hyp.scratch.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=300)
@@ -538,7 +538,7 @@ if __name__ == '__main__':
                         help='cache images for faster training')
     parser.add_argument('--image-weights', action='store_true',
                         help='use weighted image selection for training')
-    parser.add_argument('--device', default='cpu',
+    parser.add_argument('--device', default='0',
                         help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--multi-scale', action='store_true',
                         help='vary img-size +/- 50%%')

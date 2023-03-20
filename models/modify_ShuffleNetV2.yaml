@@ -1,15 +1,15 @@
-
 # parameters
-nc: 2 # number of classes
-depth_multiple: 0.33 # model depth multiple
-width_multiple: 0.50 # layer channel multiple
+nc: 2  # number of classes
+depth_multiple: 1.0  # model depth multiple
+width_multiple: 1.0  # layer channel multiple
 
 # anchors
 anchors:
-  - [7, 8, 17, 34, 19, 17] # P3/8
-  - [27, 49, 38, 26, 45, 76] # P4/16
-  - [53, 42, 74, 58, 99, 100] # P5/32
+  - [10,13, 16,30, 33,23]  # P3/8
+  - [30,61, 62,45, 59,119]  # P4/16
+  - [116,90, 156,198, 373,326]  # P5/32
 
+# custom backbone
 backbone:
   # [from, number, module, args]
   [[-1, 1, conv_bn_relu_maxpool, [32]],    # 0-P2/4
@@ -21,6 +21,7 @@ backbone:
    [-1, 1, Shuffle_Block, [464, 1]], # 6
   ]
 
+# v5lite-e head
 head:
   [[-1, 1, Conv, [96, 1, 1]],
    [-1, 1, nn.Upsample, [None, 2, 'nearest']],
