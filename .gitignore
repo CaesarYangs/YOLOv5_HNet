@@ -1,0 +1,17 @@
+build/
+
+*.DS_Store
+*.vscode
+*.pyc
+*.pyo
+static/css/lib/
+static/js/lib/
+.vscode/
+.idea/
+config/config.json
+node*/
+package-lock.json
+package.json
+*.pt
+*.onnx
+runs/

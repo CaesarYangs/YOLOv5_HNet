@@ -4,29 +4,33 @@ Usage:
     $ export PYTHONPATH="$PWD" && python models/export.py --weights ./weights/yolov5s.pt --img 640 --batch 1
 """
 
+from utils.torch_utils import select_device
+from utils.general import set_logging, check_img_size
+from utils.activations import Hardswish, SiLU
+from models.experimental import attempt_load
+import models
+import torch.nn as nn
+import torch
 import argparse
 import sys
 import time
 
 sys.path.append('./')  # to run '$ python *.py' files in subdirectories
 
-import torch
-import torch.nn as nn
-
-import models
-from models.experimental import attempt_load
-from utils.activations import Hardswish, SiLU
-from utils.general import set_logging, check_img_size
-from utils.torch_utils import select_device
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default='./yolov5s.pt', help='weights path')  # from yolov5/models/
-    parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='image size')  # height, width
+    parser.add_argument('--weights', type=str, default='weights/yolov5s.pt',
+                        help='weights path')  # from yolov5/models/
+    parser.add_argument('--img-size', nargs='+', type=int,
+                        default=[640, 640], help='image size')  # height, width
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
-    parser.add_argument('--dynamic', action='store_true', help='dynamic ONNX axes')
-    parser.add_argument('--grid', action='store_true', help='export Detect() layer grid')
-    parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--dynamic', action='store_true',
+                        help='dynamic ONNX axes')
+    parser.add_argument('--grid', action='store_true',
+                        help='export Detect() layer grid')
+    parser.add_argument('--device', default='cpu',
+                        help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     print(opt)
@@ -40,10 +44,12 @@ if __name__ == '__main__':
 
     # Checks
     gs = int(max(model.stride))  # grid size (max stride)
-    opt.img_size = [check_img_size(x, gs) for x in opt.img_size]  # verify img_size are gs-multiples
+    # verify img_size are gs-multiples
+    opt.img_size = [check_img_size(x, gs) for x in opt.img_size]
 
     # Input
-    img = torch.zeros(opt.batch_size, 3, *opt.img_size).to(device)  # image size(1,3,320,192) iDetection
+    # image size(1,3,320,192) iDetection
+    img = torch.zeros(opt.batch_size, 3, *opt.img_size).to(device)
 
     # Update model
     for k, m in model.named_modules():
@@ -60,7 +66,8 @@ if __name__ == '__main__':
 
     # TorchScript export
     try:
-        print('\nStarting TorchScript export with torch %s...' % torch.__version__)
+        print('\nStarting TorchScript export with torch %s...' %
+              torch.__version__)
         f = opt.weights.replace('.pt', '.torchscript.pt')  # filename
         ts = torch.jit.trace(model, img)
         ts.save(f)
@@ -75,7 +82,8 @@ if __name__ == '__main__':
         print('\nStarting ONNX export with onnx %s...' % onnx.__version__)
         f = opt.weights.replace('.pt', '.onnx')  # filename
         torch.onnx.export(model, img, f, verbose=False, opset_version=12, input_names=['images'],
-                          output_names=['classes', 'boxes'] if y is None else ['output'],
+                          output_names=['classes',
+                                        'boxes'] if y is None else ['output'],
                           dynamic_axes={'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
                                         'output': {0: 'batch', 2: 'y', 3: 'x'}} if opt.dynamic else None)
 
@@ -93,7 +101,8 @@ if __name__ == '__main__':
 
         print('\nStarting CoreML export with coremltools %s...' % ct.__version__)
         # convert model from torchscript and apply pixel scaling as per detect.py
-        model = ct.convert(ts, inputs=[ct.ImageType(name='image', shape=img.shape, scale=1 / 255.0, bias=[0, 0, 0])])
+        model = ct.convert(ts, inputs=[ct.ImageType(
+            name='image', shape=img.shape, scale=1 / 255.0, bias=[0, 0, 0])])
         f = opt.weights.replace('.pt', '.mlmodel')  # filename
         model.save(f)
         print('CoreML export success, saved as %s' % f)
@@ -101,4 +110,5 @@ if __name__ == '__main__':
         print('CoreML export failure: %s' % e)
 
     # Finish
-    print('\nExport complete (%.2fs). Visualize with https://github.com/lutzroeder/netron.' % (time.time() - t))
+    print('\nExport complete (%.2fs). Visualize with https://github.com/lutzroeder/netron.' %
+          (time.time() - t))
