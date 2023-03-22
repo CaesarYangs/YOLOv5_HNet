@@ -1,5 +1,5 @@
-weights: /Users/caesaryang/Developer/1-Graduate/weights/yolov5_6_2_0/yolov5s.pt
-cfg: models/new_models/baseline_s.yaml
+weights: ''
+cfg: models/new_models/modify_yolov5xs_tph_cy.yaml
 data: data/helmet1_local.yaml
 hyp:
   lr0: 0.01
@@ -43,7 +43,7 @@ evolve: null
 bucket: ''
 cache: null
 image_weights: false
-device: mps
+device: cpu
 multi_scale: false
 single_cls: false
 optimizer: SGD

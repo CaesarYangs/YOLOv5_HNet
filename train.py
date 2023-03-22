@@ -485,9 +485,11 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str,
-                        default='/Users/caesaryang/Developer/1-Graduate/weights/yolov5_6_2_0/yolov5s.pt', help='initial weights path')
+                        default='', help='initial weights path')
+    # parser.add_argument(
+    #     '--cfg', type=str, default='models/new_models/modify_yolov5l_xs_cbam_bifpn.yaml', help='model.yaml path')
     parser.add_argument(
-        '--cfg', type=str, default='models/new_models/baseline_s.yaml', help='model.yaml path')
+        '--cfg', type=str, default='models/new_models/modify_yolov5xs_tph_cy.yaml', help='model.yaml path')
     parser.add_argument('--data', type=str,
                         default='data/helmet1_local.yaml', help='dataset.yaml path')
     parser.add_argument(
@@ -517,7 +519,7 @@ def parse_opt(known=False):
                         const='ram', help='image --cache ram/disk')
     parser.add_argument('--image-weights', action='store_true',
                         help='use weighted image selection for training')
-    parser.add_argument('--device', default='mps',
+    parser.add_argument('--device', default='cpu',
                         help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--multi-scale', action='store_true',
                         help='vary img-size +/- 50%%')
