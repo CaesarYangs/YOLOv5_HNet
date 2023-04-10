@@ -489,7 +489,7 @@ def parse_opt(known=False):
     # parser.add_argument(
     #     '--cfg', type=str, default='models/new_models/modify_yolov5l_xs_cbam_bifpn.yaml', help='model.yaml path')
     parser.add_argument(
-        '--cfg', type=str, default='models/new_models/modify_yolov5xs_tph_cy.yaml', help='model.yaml path')
+        '--cfg', type=str, default='models/new_models/test.yaml', help='model.yaml path')
     parser.add_argument('--data', type=str,
                         default='data/helmet1_local.yaml', help='dataset.yaml path')
     parser.add_argument(
@@ -519,7 +519,7 @@ def parse_opt(known=False):
                         const='ram', help='image --cache ram/disk')
     parser.add_argument('--image-weights', action='store_true',
                         help='use weighted image selection for training')
-    parser.add_argument('--device', default='cpu',
+    parser.add_argument('--device', default='mps',
                         help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--multi-scale', action='store_true',
                         help='vary img-size +/- 50%%')

@@ -35,7 +35,7 @@ except ImportError:
     thop = None
 
 
-class Detect2(nn.Module):
+class Detect(nn.Module):
     # YOLOv5 Detect head for detection models
     stride = None  # strides computed during build
     dynamic = False  # force grid reconstruction
@@ -100,7 +100,7 @@ class Detect2(nn.Module):
         return grid, anchor_grid
 
 
-class Detect(nn.Module):
+class Detect2(nn.Module):
     stride = None  # strides computed during build
     onnx_dynamic = False  # ONNX export parameter
 
@@ -159,6 +159,83 @@ class Detect(nn.Module):
         anchor_grid = (self.anchors[i].clone() * self.stride[i]) \
             .view((1, self.na, 1, 1, 2)).expand((1, self.na, ny, nx, 2)).float()
         return grid, anchor_grid
+
+
+class Detect3(nn.Module):
+    stride = None  # strides computed during build
+    onnx_dynamic = False  # ONNX export parameter
+
+    def __init__(self, nc=80, anchors=(), ch=(), inplace=True):  # detection layer
+        super().__init__()
+        self.nc = nc  # number of classes
+        self.no = nc + 5  # number of outputs per anchor
+        self.nl = len(anchors)  # number of detection layers
+        self.na = len(anchors[0]) // 2  # number of anchors
+        self.grid = [torch.zeros(1)] * self.nl  # init grid
+        self.anchor_grid = [torch.zeros(1)] * self.nl  # init anchor grid
+        self.register_buffer('anchors', torch.tensor(
+            anchors).float().view(self.nl, -1, 2))  # shape(nl,na,2)
+        # self.m = nn.ModuleList(nn.Conv2d(x, self.no * self.na, 1) for x in ch)  # output conv
+        self.m_box = nn.ModuleList(nn.Conv2d(256, 4 * self.na, 1)
+                                   for x in ch)  # output conv
+        self.m_conf = nn.ModuleList(nn.Conv2d(256, 1 * self.na, 1)
+                                    for x in ch)  # output conv
+        self.m_labels = nn.ModuleList(
+            nn.Conv2d(256, self.nc * self.na, 1) for x in ch)  # output conv
+        self.base_conv = nn.ModuleList(
+            BaseConv(in_channels=x, out_channels=256, ksize=1, stride=1) for x in ch)
+        self.cls_convs = nn.ModuleList(
+            BaseConv(in_channels=256, out_channels=256, ksize=3, stride=1) for x in ch)
+        self.reg_convs = nn.ModuleList(
+            BaseConv(in_channels=256, out_channels=256, ksize=3, stride=1) for x in ch)
+
+        # self.m = nn.ModuleList(nn.Conv2d(x, 4 * self.na, 1) for x in ch, nn.Conv2d(x, 1 * self.na, 1) for x in ch,nn.Conv2d(x, self.nc * self.na, 1) for x in ch)
+        # use in-place ops (e.g. slice assignment)self.ch = ch
+        self.inplace = inplace
+
+    def forward(self, x):
+        z = []  # inference output
+        for i in range(self.nl):
+            # # x[i] = self.m[i](x[i])  # convs
+            # print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&", i)
+            # print(x[i].shape)
+            # print(self.base_conv[i])
+            # print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+
+            x_feature = self.base_conv[i](x[i])
+            # x_feature = x[i]
+
+            cls_feature = self.cls_convs[i](x_feature)
+            reg_feature = self.reg_convs[i](x_feature)
+            # reg_feature = x_feature
+
+            m_box = self.m_box[i](reg_feature)
+            m_conf = self.m_conf[i](reg_feature)
+            m_labels = self.m_labels[i](cls_feature)
+            x[i] = torch.cat((m_box, m_conf, m_labels), 1)
+            bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
+            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(
+                0, 1, 3, 4, 2).contiguous()
+
+            if not self.training:  # inference
+                if self.onnx_dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                    self.grid[i], self.anchor_grid[i] = self._make_grid(
+                        nx, ny, i)
+
+                y = x[i].sigmoid()
+                if self.inplace:
+                    y[..., 0:2] = (y[..., 0:2] * 2 - 0.5 +
+                                   self.grid[i]) * self.stride[i]  # xy
+                    y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * \
+                        self.anchor_grid[i]  # wh
+                else:  # for YOLOv5 on AWS Inferentia https://github.com/ultralytics/yolov5/pull/2953
+                    xy = (y[..., 0:2] * 2 - 0.5 + self.grid[i]) * \
+                        self.stride[i]  # xy
+                    wh = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                    y = torch.cat((xy, wh, y[..., 4:]), -1)
+                z.append(y.view(bs, -1, self.no))
+
+        return x if self.training else (torch.cat(z, 1), x)
 
 
 class Segment(Detect):
@@ -279,7 +356,7 @@ class DetectionModel(BaseModel):
             check_anchor_order(m)
             m.anchors /= m.stride.view(-1, 1, 1)
             self.stride = m.stride
-            self._initialize_biases()  # only run once
+            # self._initialize_biases()  # only run once
 
         # Init weights, biases
         initialize_weights(self)
@@ -414,7 +491,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
         n = n_ = max(round(n * gd), 1) if n > 1 else n  # depth gain
         if m in {
                 Conv, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, DWConv, DWConvblock, conv_bn_relu_maxpool, Shuffle_Block, MixConv2d, Focus, CrossConv,
-                BottleneckCSP, C3, C3TR, C3STR, C3SPP, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, CBAM}:
+                BottleneckCSP, C3, C3TR, C3STR, C3SPP, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, CBAM, h_sigmoid, h_swish, SELayer, conv_bn_hswish, MobileNet_Block}:
             c1, c2 = ch[f], args[0]
             if c2 != no:  # if not output
                 c2 = make_divisible(c2 * gw, 8)
@@ -438,6 +515,8 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                 args[3] = make_divisible(args[3] * gw, 8)
         elif m is Contract:
             c2 = ch[f] * args[0] ** 2
+        elif m is space_to_depth:
+            c2 = 4*ch[f]
         elif m is Expand:
             c2 = ch[f] // args[0] ** 2
         else:
@@ -499,3 +578,47 @@ if __name__ == '__main__':
 
     else:  # report fused model summary
         model.fuse()
+
+# =======change for decoupled head=======
+
+
+def get_activation(name="silu", inplace=True):
+    if name == "silu":
+        module = nn.SiLU(inplace=inplace)
+    elif name == "relu":
+        module = nn.ReLU(inplace=inplace)
+    elif name == "lrelu":
+        module = nn.LeakyReLU(0.1, inplace=inplace)
+    else:
+        raise AttributeError("Unsupported act type: {}".format(name))
+    return module
+
+
+class BaseConv(nn.Module):
+    """A Conv2d -> Batchnorm -> silu/leaky relu block"""
+
+    def __init__(
+        self, in_channels, out_channels, ksize, stride, groups=1, bias=False, act="silu"
+    ):
+        super().__init__()
+        # same padding
+        pad = (ksize - 1) // 2
+        self.conv = nn.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=ksize,
+            stride=stride,
+            padding=pad,
+            groups=groups,
+            bias=bias,
+        )
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.act = get_activation(act, inplace=True)
+
+    def forward(self, x):
+        # print(self.bn(self.conv(x)).shape)
+        return self.act(self.bn(self.conv(x)))
+        # return self.bn(self.conv(x))
+
+    def fuseforward(self, x):
+        return self.act(self.conv(x))
