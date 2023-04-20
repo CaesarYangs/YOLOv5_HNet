@@ -1,0 +1,169 @@
+# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
+# Model Summary: 586 layers, 45398956 parameters, 45398956 gradients, 260.8 GFLOPs
+
+# Parameters
+nc: 2 # number of classes
+depth_multiple: 1.0 # model depth multiple
+width_multiple: 1.0 # layer channel multiple
+anchors:
+  4
+  # - [10, 13, 16, 30, 33, 23] # P3/8
+  # - [30, 61, 62, 45, 59, 119] # P4/16
+  # - [116, 90, 156, 198, 373, 326] # P5/32
+
+# YOLOv5 v6.0 backbone
+backbone:
+  # [from, number, module, args]
+  # args:[output,kernal_size,stride,padding]
+  [
+    [-1, 1, Conv, [64, 3, 2]], # 0-P1/2 | 160*160*64
+    [-1, 1, Shuffle_Block, [128, 2]], # 1-P2/4 | 80*80*128
+    [-1, 3, Shuffle_Block, [128, 1]], # | 80*80*128
+    [-1, 1, Shuffle_Block, [256, 2]], # 3-P3/8 | 40*40*256
+    [-1, 6, Shuffle_Block, [256, 1]], # | 40*40*256
+    [-1, 1, Shuffle_Block, [512, 2]], # 5-P4/16 | 20*20*512
+    [-1, 9, Shuffle_Block, [512, 1]], # | 20*20*512
+    [-1, 1, Shuffle_Block, [1024, 2]], # 7-P5/32  | 10*10*1024
+    [-1, 1, SPPF, [1024, 5]], # | 10*10*1024
+    [-1, 3, C3TR, [1024]], # 9 | 10*10*1024
+  ]
+  # [
+  #   [-1, 1, Conv, [64, 3, 2]], # 0-P1/2 | 160*160*64
+  #   [-1, 1, Conv, [128, 3, 2]], # 1-P2/4 | 80*80*128
+  #   [-1, 3, C3, [128]], # | 80*80*128
+  #   [-1, 1, Conv, [256, 3, 2]], # 3-P3/8 | 40*40*256
+  #   [-1, 6, C3, [256]], # | 40*40*256
+  #   [-1, 1, Conv, [512, 3, 2]], # 5-P4/16 | 20*20*512
+  #   [-1, 9, C3, [512]], # | 20*20*512
+  #   [-1, 1, Conv, [1024, 3, 2]], # 7-P5/32  | 10*10*1024
+  #   [-1, 1, SPPF, [1024, 5]], # 9 | 10*10*1024
+  #   [-1, 3, C3TR, [1024]], # | 10*10*1024
+  # ]
+
+# YOLOv5 v7.0 head
+head: [
+    # pyrimid section 1-1
+    [-1, 1, Conv, [512, 1, 1]], # 10 | 10*10*512
+    [-1, 1, nn.Upsample, [None, 2, "nearest"]], #
+    [[-1, 6], 1, Concat, [1]], # cat backbone P4
+    [-1, 1, DWConvblock, [512, 3, 1]], # 13
+
+    # pyrimid section 1-2
+    [-1, 1, Conv, [256, 1, 1]],
+    [-1, 1, nn.Upsample, [None, 2, "nearest"]],
+    [[-1, 4], 1, Concat, [1]], # cat backbone P3
+    [-1, 1, DWConvblock, [256, 3, 1]], # 17 (P3/8-small)
+
+    # pyrimid section 1-3
+    [-1, 1, Conv, [128, 1, 1]],
+    [-1, 1, nn.Upsample, [None, 2, "nearest"]],
+    [[-1, 2], 1, Concat, [1]], # cat backbone P2
+    [-1, 1, SPP, [128, [5, 9, 13]]],
+    [-1, 1, DWConvblock, [128, 3, 1]], #  (P2/4-xsmall)
+    [-1, 1, CBAM, [128]], # 23
+
+    # pyrimid section 2-1
+    [-1, 1, Conv, [128, 3, 2]],
+    [[-1, 18, 4], 1, Concat, [1]], # cat head P3
+    [-1, 1, SPP, [256, [5, 9, 13]]],
+    [-1, 1, DWConvblock, [256, 3, 1]], # (P3/8-small)
+    [-1, 1, CBAM, [256]], # 28
+
+    # pyrimid section 2-2
+    [-1, 1, Conv, [256, 3, 2]],
+    [[-1, 14, 6], 1, Concat, [1]], # cat head P4
+    [-1, 1, SPP, [512, [3, 7, 11]]],
+    [-1, 1, DWConvblock, [512, 3, 1]], #  (P4/16-medium)
+    [-1, 1, CBAM, [512]], # 33
+
+    # pyrimid section 2-3
+    [-1, 1, Conv, [512, 3, 2]],
+    [[-1, 10], 1, Concat, [1]], # cat head P5
+    [-1, 1, SPP, [1024, [3, 5, 7]]],
+    [-1, 3, C3TR, [1024, 3, 1]], #  (P5/32-large)
+    [-1, 1, CBAM, [1024]], # 38
+
+    #----------
+
+    # # pyrimid section 3-1
+    # [-1, 1, Conv, [512, 1, 1]], # 39 | 10*10*512
+    # [-1, 1, nn.Upsample, [None, 2, "nearest"]], #
+    # [[-1, 10], 1, Concat, [1]], # cat backbone P4
+    # [-1, 1, DWConvblock, [512, 3, 1]], # 42
+
+    # # pyrimid section 3-2
+    # [-1, 1, Conv, [256, 1, 1]], # 43
+    # [-1, 1, nn.Upsample, [None, 2, "nearest"]],
+    # [[-1, 29], 1, Concat, [1]], # cat backbone P3
+    # [-1, 1, DWConvblock, [256, 3, 1]], # 46 (P3/8-small)
+
+    # # pyrimid section 3-3
+    # [-1, 1, Conv, [128, 1, 1]], # 47
+    # [-1, 1, nn.Upsample, [None, 2, "nearest"]],
+    # [[-1, 24], 1, Concat, [1]], # cat backbone P2
+    # [-1, 1, SPP, [128, [5, 9, 13]]],
+    # [-1, 1, DWConvblock, [128, 3, 1]], #  (P2/4-xsmall)
+    # [-1, 1, CBAM, [128]], # 52
+
+    # # pyrimid section 4-1
+    # [-1, 1, Conv, [128, 3, 2]], # 53
+    # [[-1, 47, 24], 1, Concat, [1]], # cat head P3
+    # [-1, 1, SPP, [256, [5, 9, 13]]],
+    # [-1, 1, DWConvblock, [256, 3, 1]], # (P3/8-small)
+    # [-1, 1, CBAM, [256]], # 57
+
+    # # pyrimid section 4-2
+    # [-1, 1, Conv, [256, 3, 2]], # 58
+    # [[-1, 43, 29], 1, Concat, [1]], # cat head P4
+    # [-1, 1, SPP, [512, [3, 7, 11]]],
+    # [-1, 1, DWConvblock, [512, 3, 1]], #  (P4/16-medium)
+    # [-1, 1, CBAM, [512]], # 62
+
+    # # pyrimid section 4-3
+    # [-1, 1, Conv, [512, 3, 2]], # 63
+    # [[-1, 39], 1, Concat, [1]], # cat head P5
+    # [-1, 1, SPP, [1024, [3, 5, 7]]],
+    # [-1, 3, C3TR, [1024, 3, 1]], #  (P5/32-large)
+    # [-1, 1, CBAM, [1024]], # 67
+
+    # [[52, 57, 62, 67], 1, Detect, [nc, anchors]], # Detect(P2, P3, P4, P5)
+    [[23, 28, 33, 38], 1, Detect, [nc, anchors]], # Detect(P2, P3, P4, P5)
+  ]
+# head: [
+#     [-1, 1, Conv, [512, 1, 1]], # | 10*10*512
+#     [-1, 1, nn.Upsample, [None, 2, "nearest"]], #
+#     [[-1, 6], 1, Concat, [1]], # cat backbone P4
+#     [-1, 3, C3, [512, False]], # 13
+
+#     [-1, 1, Conv, [256, 1, 1]],
+#     [-1, 1, nn.Upsample, [None, 2, "nearest"]],
+#     [[-1, 4], 1, Concat, [1]], # cat backbone P3
+#     [-1, 3, C3, [256, False]], # 17 (P3/8-small)
+
+#     [-1, 1, Conv, [128, 1, 1]],
+#     [-1, 1, nn.Upsample, [None, 2, "nearest"]],
+#     [[-1, 2], 1, Concat, [1]], # cat backbone P2
+#     [-1, 1, SPP, [128, [5, 9, 13]]],
+#     [-1, 3, C3, [128, False]], #  (P2/4-xsmall)
+#     [-1, 1, CBAM, [128]], # 23
+
+#     [-1, 1, Conv, [128, 3, 2]],
+#     [[-1, 18, 4], 1, Concat, [1]], # cat head P3
+#     [-1, 1, SPP, [256, [5, 9, 13]]],
+#     [-1, 3, C3, [256, False]], # (P3/8-small)
+#     [-1, 1, CBAM, [256]], # 28
+
+#     [-1, 1, Conv, [256, 3, 2]],
+#     [[-1, 14, 6], 1, Concat, [1]], # cat head P4
+#     [-1, 1, SPP, [512, [3, 7, 11]]],
+#     [-1, 3, C3, [512, False]], #  (P4/16-medium)
+#     [-1, 1, CBAM, [512]], # 33
+
+#     [-1, 1, Conv, [512, 3, 2]],
+#     [[-1, 10], 1, Concat, [1]], # cat head P5
+#     [-1, 1, SPP, [1024, [3, 5, 7]]],
+#     [-1, 3, C3TR, [1024, False]], #  (P5/32-large)
+#     [-1, 1, CBAM, [1024]], # 38
+
+#     [[23, 28, 33, 38], 1, Detect, [nc, anchors]], # Detect(P2, P3, P4, P5)
+#   ]

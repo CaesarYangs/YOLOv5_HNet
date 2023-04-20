@@ -1,0 +1,44 @@
+1:local_epoch=5
+3/4:local_epoch=3
+
+client1  val:
+val: data=data/fl_clients/1.yaml, weights=['/Users/caesaryang/Developer/1-Graduate/res_analysis/fl/FL-E2-HPO3_5/weights/avg_ckpt_E20.pt'], batch_size=32, imgsz=320, conf_thres=0.001, iou_thres=0.6, max_det=300, task=val, device=cpu, workers=8, single_cls=False, augment=False, verbose=False, save_txt=False, save_hybrid=False, save_conf=False, save_json=False, project=runs/val, name=exp, exist_ok=False, half=False, dnn=False
+YOLOv5 🚀 e992d82 Python-3.8.16 torch-2.0.0 CPU
+
+Fusing layers... 
+YOLOv5s summary: 157 layers, 7015519 parameters, 0 gradients, 15.8 GFLOPs
+val: Scanning /Users/caesaryang/Developer/1-Graduate/datasets/datasets1/val.cache... 123 images, 0 backgrounds, 0 corrupt: 100%|██████████| 123/123 00:00
+                 Class     Images  Instances          P          R      mAP50   mAP50-95: 100%|██████████| 4/4 00:09
+                   all        123        334      0.667      0.634      0.666      0.329
+                     0        123        308      0.959      0.537      0.804      0.414
+                     1        123         26      0.374      0.731      0.528      0.245
+Speed: 0.2ms pre-process, 59.0ms inference, 0.1ms NMS per image at shape (32, 3, 320, 320)
+Results saved to runs/val/exp
+client3  val:
+val: data=data/fl_clients/3.yaml, weights=['/Users/caesaryang/Developer/1-Graduate/res_analysis/fl/FL-E2-HPO3_5/weights/avg_ckpt_E20.pt'], batch_size=32, imgsz=320, conf_thres=0.001, iou_thres=0.6, max_det=300, task=val, device=cpu, workers=8, single_cls=False, augment=False, verbose=False, save_txt=False, save_hybrid=False, save_conf=False, save_json=False, project=runs/val, name=exp, exist_ok=False, half=False, dnn=False
+YOLOv5 🚀 e992d82 Python-3.8.16 torch-2.0.0 CPU
+
+Fusing layers... 
+YOLOv5s summary: 157 layers, 7015519 parameters, 0 gradients, 15.8 GFLOPs
+val: Scanning /Users/caesaryang/Developer/1-Graduate/datasets/datasets3/val.cache... 169 images, 8 backgrounds, 0 corrupt: 100%|██████████| 169/169 00:00
+                 Class     Images  Instances          P          R      mAP50   mAP50-95: 100%|██████████| 6/6 00:13
+                   all        169       1205      0.661      0.511      0.524      0.316
+                     0        169        854       0.58      0.254      0.272      0.103
+                     1        169        351      0.742      0.769      0.776      0.529
+Speed: 0.1ms pre-process, 63.7ms inference, 0.2ms NMS per image at shape (32, 3, 320, 320)
+Results saved to runs/val/exp
+client4  val:
+val: data=data/fl_clients/4.yaml, weights=['/Users/caesaryang/Developer/1-Graduate/res_analysis/fl/FL-E2-HPO3_5/weights/avg_ckpt_E20.pt'], batch_size=32, imgsz=320, conf_thres=0.001, iou_thres=0.6, max_det=300, task=val, device=cpu, workers=8, single_cls=False, augment=False, verbose=False, save_txt=False, save_hybrid=False, save_conf=False, save_json=False, project=runs/val, name=exp, exist_ok=False, half=False, dnn=False
+YOLOv5 🚀 e992d82 Python-3.8.16 torch-2.0.0 CPU
+
+Fusing layers... 
+YOLOv5s summary: 157 layers, 7015519 parameters, 0 gradients, 15.8 GFLOPs
+val: Scanning /Users/caesaryang/Developer/1-Graduate/datasets/datasets4/val.cache... 169 images, 4 backgrounds, 0 corrupt: 100%|██████████| 169/169 00:00
+val: WARNING ⚠️ /Users/caesaryang/Developer/1-Graduate/datasets/datasets4/images/000168.jpg: corrupt JPEG restored and saved
+val: WARNING ⚠️ /Users/caesaryang/Developer/1-Graduate/datasets/datasets4/images/part2_001363.jpg: corrupt JPEG restored and saved
+                 Class     Images  Instances          P          R      mAP50   mAP50-95: 100%|██████████| 6/6 00:12
+                   all        169       1507      0.646      0.554      0.567      0.357
+                     0        169       1141      0.505       0.27      0.258     0.0934
+                     1        169        366      0.787      0.839      0.876      0.621
+Speed: 0.2ms pre-process, 63.1ms inference, 0.2ms NMS per image at shape (32, 3, 320, 320)
+Results saved to runs/val/exp
