@@ -53,6 +53,31 @@ This method can be considered as "quantity over quality." Simply stacking additi
 
 However, it does prove that reassigning anchors can be helpful in achieving improvements without adding computational load or modifying the network structure. It demonstrates the usability of remapping anchors for target objects specific to safety helmets in this domain.
 
+## Solution 2: Modifying Neck&Head Structure, Adding Attention Mechanisms, and Transformer
+
+**Approach:**
+
+This method is inspired by the paper [TPH-YOLOv5](https://arxiv.org/abs/2108.11539), which introduces a Transformer Prediction Head to YOLOv5, resulting in improved detection performance. Based on this detection head, I choose to focus on optimizing the FPN structure and incorporating TPH with attention mechanisms, considering the characteristics of the dataset at hand.
+
+**Improvements:**
+
+1. Modifying the FPN structure to Bi-FPH (Weighted Bidirectional Feature Pyramid Network) to enhance the accuracy and precision of feature fusion, and to some extent, address the issue of small objects.
+2. Adding CBAM (Convolutional Block Attention Module), a simple and effective attention mechanism for feed-forward convolutional neural networks. CBAM is a lightweight and versatile module that can be seamlessly integrated into any CNN architecture, and can be trained end-to-end with the base CNN.
+3. Finally, combining the TPH detection head to form a four-headed detection head.
+
+**Training Results:**
+
+| Type        | Model            | Parameters | FLOPs  | .pt size | mAP@0.5 | mAP@0.5~0.95 | FPS   |
+| ----------- | ---------------- | ---------- | ------ | -------- | ------- | ------------ | ----- |
+| Power Plant | YOLOv5s_baseline | 7.06M      | 16.5G  | 14.3MB   | 0.75    | 0.484        | 30.5  |
+| Power Plant | bifpn-cbam-tph   | 45M        | 180G   | 87.5MB   | 0.76    | 0.388        | 10.0  |
+| Car Factory | YOLOv5s_baseline | 7.06M      | 16.5G  | 14.4MB   | 0.83    | 0.585        | 30.0  |
+| Car Factory | bifpn-cbam-tph   | 45M        | 180G   | 87.5MB   | 0.85    | 0.574        | 12.0  |
+
+**Analysis:**
+
+By incorporating a series of mechanisms, there is indeed an improvement in overall accuracy. However, this comes at the cost of significantly increased computational requirements and slower convergence speed. Additionally, the detection speed is greatly reduced. I have some doubts about this, as it seems that excessive feature extraction or attention mechanisms do not provide significant improvements or significance in the detection of safety helmets and similar objects.
+
 ## Solution 3: Network Slim - Lightweight Network Design
 
 **Approach:**
